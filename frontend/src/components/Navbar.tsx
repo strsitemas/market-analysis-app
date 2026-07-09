@@ -17,8 +17,8 @@ export default function Navbar() {
   const router = useRouter();
   const { usuario, carregando, sair } = useAuth();
 
-  function aoSair() {
-    sair();
+  async function aoSair() {
+    await sair();
     router.push("/login");
   }
 

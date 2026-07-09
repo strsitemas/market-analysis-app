@@ -1,7 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1";
 
 async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, { cache: "no-store" });
+  const res = await fetch(`${API_URL}${path}`, { cache: "no-store", credentials: "include" });
   if (!res.ok) {
     throw new Error(`Erro ${res.status} ao consultar ${path}`);
   }
@@ -18,6 +18,7 @@ async function apiSend<T>(
     headers: body ? { "Content-Type": "application/json" } : undefined,
     body: body ? JSON.stringify(body) : undefined,
     cache: "no-store",
+    credentials: "include",
   });
   if (!res.ok) {
     const detalhe = await res.json().catch(() => null);
@@ -115,13 +116,18 @@ export function verificarAlertasAgora() {
     "POST"
   );
 }
+
 // --- Autenticacao ---
+// O backend agora seta um cookie httpOnly no login. Nao guardamos mais
+// token nenhum no frontend -- o navegador manda o cookie sozinho em
+// toda chamada, desde que "credentials: include" esteja setado (ja
+// esta, em apiGet/apiSend/login/logout).
 
 export function registrarUsuario(email: string, senha: string) {
   return apiSend<import("@/types/auth").Usuario>("/auth/registrar", "POST", { email, senha });
 }
 
-export async function login(email: string, senha: string) {
+export async function login(email: string, senha: string): Promise<void> {
   const body = new URLSearchParams();
   body.set("username", email);
   body.set("password", senha);
@@ -131,24 +137,21 @@ export async function login(email: string, senha: string) {
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: body.toString(),
     cache: "no-store",
+    credentials: "include",
   });
 
   if (!res.ok) {
     const detalhe = await res.json().catch(() => null);
     throw new Error(detalhe?.detail ?? "Email ou senha invalidos");
   }
-
-  return res.json() as Promise<import("@/types/auth").Token>;
+  // Nao precisamos ler o token do corpo: o cookie ja foi setado pela
+  // resposta (Set-Cookie). So confirmamos que deu certo.
 }
 
-export function obterUsuarioAtual(token: string) {
-  return fetch(`${API_URL}/auth/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-    cache: "no-store",
-  }).then((res) => {
-    if (!res.ok) {
-      throw new Error("Token invalido ou expirado");
-    }
-    return res.json() as Promise<import("@/types/auth").Usuario>;
-  });
+export function logout(): Promise<void> {
+  return apiSend<void>("/auth/logout", "POST");
+}
+
+export function obterUsuarioAtual() {
+  return apiGet<import("@/types/auth").Usuario>("/auth/me");
 }

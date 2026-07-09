@@ -1,16 +1,14 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { login as apiLogin, obterUsuarioAtual } from "@/lib/api";
+import { login as apiLogin, logout as apiLogout, obterUsuarioAtual } from "@/lib/api";
 import type { Usuario } from "@/types/auth";
-
-const TOKEN_KEY = "market_analysis_token";
 
 interface AuthContextValue {
   usuario: Usuario | null;
   carregando: boolean;
   entrar: (email: string, senha: string) => Promise<void>;
-  sair: () => void;
+  sair: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -20,26 +18,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [carregando, setCarregando] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setCarregando(false);
-      return;
-    }
-    obterUsuarioAtual(token)
+    // Nao ha token pra checar no localStorage: so tentamos buscar o
+    // usuario atual. Se houver cookie de sessao valido, o backend
+    // retorna os dados; senao, cai no catch e fica deslogado.
+    obterUsuarioAtual()
       .then(setUsuario)
-      .catch(() => localStorage.removeItem(TOKEN_KEY))
+      .catch(() => setUsuario(null))
       .finally(() => setCarregando(false));
   }, []);
 
   async function entrar(email: string, senha: string) {
-    const tokenResp = await apiLogin(email, senha);
-    localStorage.setItem(TOKEN_KEY, tokenResp.access_token);
-    const usuarioAtual = await obterUsuarioAtual(tokenResp.access_token);
+    await apiLogin(email, senha);
+    const usuarioAtual = await obterUsuarioAtual();
     setUsuario(usuarioAtual);
   }
 
-  function sair() {
-    localStorage.removeItem(TOKEN_KEY);
+  async function sair() {
+    await apiLogout().catch(() => undefined);
     setUsuario(null);
   }
 
