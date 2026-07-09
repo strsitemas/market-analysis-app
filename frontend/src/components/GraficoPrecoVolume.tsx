@@ -68,7 +68,7 @@ export function GraficoPrecoVolume({ ticker, tecnico }: Props) {
               tickFormatter={(v) => `R$ ${v.toFixed(0)}`}
             />
             <Tooltip
-              formatter={(value: number) => [`R$ ${value.toFixed(2)}`, "Fechamento"]}
+              formatter={(value) => [`R$ ${Number(value).toFixed(2)}`, "Fechamento"]}
             />
             <Line
               type="monotone"
@@ -121,7 +121,7 @@ export function GraficoPrecoVolume({ ticker, tecnico }: Props) {
               tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}M`}
             />
             <Tooltip
-              formatter={(value: number) => [value.toLocaleString("pt-BR"), "Volume"]}
+              formatter={(value) => [Number(value).toLocaleString("pt-BR"), "Volume"]}
             />
             <Bar dataKey="volume" fill="#94a3b8" />
           </ComposedChart>
