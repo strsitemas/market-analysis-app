@@ -1,0 +1,32 @@
+# Ambientes virtuais Python
+venv/
+__pycache__/
+*.pyc
+
+# Vari√°veis de ambiente (NUNCA subir)
+.env
+.env.local
+.env.*.local
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+
+# Build
+dist/
+build/
+
+# Editores / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+# Materiais internos, n„o versionar
+setup-marketing/
+setup-marketing
+
