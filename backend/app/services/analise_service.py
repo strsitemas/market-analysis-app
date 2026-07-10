@@ -55,13 +55,27 @@ class AnaliseService:
     def obter_analise_multipla(
         self, db: Session, tickers: list[str]
     ) -> AnaliseMultiplaSchema:
+        """
+        Processa cada ticker isoladamente. Se um ticker falhar (erro de
+        rede, dado ausente no yfinance, timeout etc.), o erro fica
+        registrado em `erros` e o processamento continua para os
+        demais -- um ativo com problema nunca derruba a tabela inteira.
+
+        Antes so capturavamos ValueError, mas falhas reais de rede/API
+        externa (yfinance) podem vir como outros tipos de excecao (ex:
+        erros de conexao, timeout, JSON invalido). Por isso capturamos
+        Exception aqui -- e o unico lugar do sistema onde isso e
+        aceitavel, porque estamos isolando erro por item de uma lista,
+        nao escondendo bug de logica interna.
+        """
         resultados = []
         erros: dict[str, str] = {}
 
         for ticker in tickers:
+            ticker_normalizado = normalizar_ticker(ticker)
             try:
                 resultados.append(self.obter_analise_completa(db, ticker))
-            except ValueError as exc:
-                erros[normalizar_ticker(ticker)] = str(exc)
+            except Exception as exc:
+                erros[ticker_normalizado] = str(exc)
 
         return AnaliseMultiplaSchema(resultados=resultados, erros=erros)
